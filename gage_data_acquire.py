@@ -4,7 +4,7 @@ from dataretrieval import nwis
 import csv
 import pandas as pd
  
-with open("/home/xushuolong1/flood_data_preprocess/data/gauge_information.txt", "r", encoding="utf-8") as file:
+with open("path_to_gauge_information.txt", "r", encoding="utf-8") as file:
     content = file.readlines()
     
 gage_ids = [line.split('\t')[1].strip() for line in content[1:] if line.strip()]
