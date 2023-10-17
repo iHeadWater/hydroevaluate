@@ -12,19 +12,34 @@ import numpy as np
 import re
 import datetime
 
+def list_all_files_with_root(dir_path):
+    """
+    遍历指定文件夹及其子文件夹下的所有文件，并返回每个文件的 root 路径和文件名
+    :param dir_path: 指定的文件夹路径
+    :return: 包含 (root, file_name) 对的列表
+    """
+    result = []
+
+    for root, dirs, files in os.walk(dir_path):
+        for file_name in files:
+            result.append((root, file_name))
+
+    return result
+
+
 # 打开文件
 watershed = geopandas.read_file('../data/671_shp/671-hyd_na_dir_30s.shp')
 
 # 根据watershed的结果，生成各个流域的mask
-# gen_mask(watershed, "STAID", "gpm", save_dir="./mask")
+# gen_mask(watershed, "STAID", "gfs", save_dir="./mask_GFS")
 
 # 设置文件夹路径
-mask_folder_path = './mask_GPM/'
-gpm_folder_path = '../data/GPM/'
+mask_folder_path = './mask_GFS/'
+gfs_folder_path = '../data/GFS/09/'
 
 # 获取文件夹中所有的文件
 all_mask_files = os.listdir(mask_folder_path)
-'''
+
 # 正则表达式模式，用于提取数字，因为那个mask函数生成的文件名太乱了，这里要整理一下
 pattern = re.compile(r'mask-(\d{1,8})-.*\.nc')
 
@@ -51,29 +66,18 @@ for file_name in all_mask_files:
         
         # 输出或其他操作
         print(f'Renamed: {file_name} -> {new_file_name}')
-'''
+
 
 # 正则表达式模式，用于提取日期和时间信息
-pattern = re.compile(r'3B-HHR-E\.MS\.MRG\.3IMERG\.(\d{8})-S(\d{6})-E(\d{6})\.\d{4}\.V06C\.HDF5\.SUB\.nc4')
+pattern = re.compile(r'gfs(\d+).t(\d+)z.pgrb2.0p25.f(\d+)')
 
 # 获取文件夹中所有的文件
-all_GPM_files = os.listdir(gpm_folder_path)
+all_GFS_files = list_all_files_with_root(gfs_folder_path)
 
-# 空列表，用于存储文件名和对应的时间信息
-file_times = []
-
-# 遍历文件，提取日期和时间信息
-for gpm_file_name in all_GPM_files:
-    match = pattern.match(gpm_file_name)
-    if match:
-        date_str, start_time_str, end_time_str = match.groups()
-        dt = datetime.datetime.strptime(date_str + start_time_str, '%Y%m%d%H%M%S')
-        file_times.append((gpm_file_name, dt))
-
-# 按时间排序
-file_times.sort(key=lambda x: x[1])
+all_GFS_files.sort()
 
 all_mask_files = os.listdir(mask_folder_path)
+
 # 依次读取文件
 for mask_file_name in all_mask_files:
     
@@ -84,19 +88,59 @@ for mask_file_name in all_mask_files:
         lon_max = float(format(mask.coords["lon"][-1].values))
         lat_max = float(format(mask.coords["lat"][-1].values))
 
-        for gpm_time_file_name, gpm_time_file_time in file_times:
-            gpm_time_file_path = os.path.join(gpm_folder_path, gpm_time_file_name)
-
-            data = xr.open_dataset(gpm_time_file_path)
-
+        for GFS_file_root, GFS_file_name in all_GFS_files:
+            
+            GFS_file_path = GFS_file_root + "/" + GFS_file_name
+            
+            print(GFS_file_path)
+            data = xr.open_dataset(GFS_file_path, engine='cfgrib', backend_kwargs={'filter_by_keys': {'stepType': 'instant'}})
+            
+            # data.rename({'longitude': 'lon', 'latitude': 'lat', 'pwat': 'precipitationCal'})
+            
             data_process = data.sel(
-                lon=slice(lon_min, lon_max + 0.01),
-                lat=slice(lat_min, lat_max + 0.01)
+                longitude=slice(lon_min, lon_max + 0.01),
+                latitude=slice(lat_min, lat_max + 0.01)
             )
+            
+            match = pattern.match(GFS_file_name)
+            
+            if match:
+                date = match.group(1)
+                current_hour = match.group(2)
+                forecast_hour = match.group(3)
+                data_process_name = f"{date}{current_hour}_{forecast_hour.zfill(3)}"
 
-            data_process_path = "mask_stream_data/" + mask_file_name.replace(".nc", "") + "/"
+            data_process_path = "mask_gfs_stream_data/" + mask_file_name.replace(".nc", "") + "/"
 
-            data_process_name = gpm_time_file_time
+            data_process_full_path = data_process_path + str(data_process_name)
+
+            # 检查路径是否存在，若不存在，则创建该路径
+            if not os.path.exists(data_process_path):
+                os.makedirs(data_process_path)
+                print(f"Path {data_process_path} created", backend_kwargs={'filter_by_keys': {'stepType': 'instant'}})
+            else:
+                print(f"Path {data_process_path} already exists")
+
+            data_process.to_netcdf(data_process_full_path + ".nc")
+            
+    except:
+        for GFS_file_root, GFS_file_name in all_GFS_files:
+            
+            GFS_file_path = GFS_file_root + "/" + GFS_file_name
+            
+            data = xr.open_dataset(GFS_file_path, engine='cfgrib')
+            
+            data_process = data
+            
+            match = pattern.match(GFS_file_name)
+            
+            if match:
+                date = match.group(1)
+                current_hour = match.group(2)
+                forecast_hour = match.group(3)
+                data_process_name = f"{date}{current_hour}_{forecast_hour.zfill(3)}"
+
+            data_process_path = "mask_gfs_stream_data/" + mask_file_name.replace(".nc", "") + "_error/"
 
             data_process_full_path = data_process_path + str(data_process_name)
 
@@ -108,26 +152,3 @@ for mask_file_name in all_mask_files:
                 print(f"Path {data_process_path} already exists")
 
             data_process.to_netcdf(data_process_full_path + ".nc")
-            
-    except:
-        for gpm_time_file_name, gpm_time_file_time in file_times:
-            gpm_time_file_path = os.path.join(gpm_folder_path, gpm_time_file_name)
-
-            data = xr.open_dataset(gpm_time_file_path)
-            
-            data_process = data
-
-            data_process_path = "mask_stream_data/" + mask_file_name.replace(".nc", "") + "_error/"
-
-            data_process_name = gpm_time_file_time
-
-            data_process_full_path = data_process_path + str(data_process_name)
-
-            # 检查路径是否存在，若不存在，则创建该路径
-            if not os.path.exists(data_process_path):
-                os.makedirs(data_process_path)
-                print(f"Path {data_process_path} created")
-            else:
-                print(f"Path {data_process_path} already exists")
-
-            # data_process.to_netcdf(data_process_full_path + "_error.nc")
