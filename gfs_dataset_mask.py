@@ -22,7 +22,8 @@ def list_all_files_with_root(dir_path):
 
     for root, dirs, files in os.walk(dir_path):
         for file_name in files:
-            result.append((root, file_name))
+           if not file_name.endswith("923a8.idx"):
+                result.append((root, file_name))
 
     return result
 
@@ -117,7 +118,7 @@ for mask_file_name in all_mask_files:
             # 检查路径是否存在，若不存在，则创建该路径
             if not os.path.exists(data_process_path):
                 os.makedirs(data_process_path)
-                print(f"Path {data_process_path} created", backend_kwargs={'filter_by_keys': {'stepType': 'instant'}})
+                print(f"Path {data_process_path} created")
             else:
                 print(f"Path {data_process_path} already exists")
 
