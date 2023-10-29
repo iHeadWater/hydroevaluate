@@ -86,7 +86,8 @@ def fetch_latest_data(
     return latest_data
 
 # Testing the combined function
-mask = xr.open_dataset('/home/xushuolong1/flood_data_preprocess/GPM_data_preprocess/mask_GFS/05584500.nc')
+# mask = xr.open_dataset('/home/xushuolong1/flood_data_preprocess/GPM_data_preprocess/mask_GFS/05584500.nc')
+mask = xr.open_dataset(path_to_your_nc_file)
 box = (mask.coords["lon"][0], mask.coords["lat"][0],mask.coords["lon"][-1], mask.coords["lat"][-1])
 test_data = fetch_latest_data(date_np = "2017-01-01", time_str = "23", bbbox = box, num = 3)
 # print(test_data)
