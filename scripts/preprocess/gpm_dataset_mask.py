@@ -81,7 +81,7 @@ for nc_file in nc_files:
 
         # 创建新的文件名
         new_file_name = f"{time_str}.nc"
-        output_base_path = os.path.join(nc_output_path, new_file_name)
+        output_base_file_path = os.path.join(nc_output_path, new_file_name)
 
         # 保存乘积数据到新文件
-        multiplied_data.to_netcdf(output_base_path)
+        multiplied_data.to_netcdf(output_base_file_path)
