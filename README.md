@@ -1,7 +1,7 @@
 <!--
  * @Author: Wenyu Ouyang
  * @Date: 2023-10-29 17:35:04
- * @LastEditTime: 2023-10-29 19:14:44
+ * @LastEditTime: 2023-11-30 14:33:58
  * @LastEditors: Wenyu Ouyang
  * @Description: USE AI TO FORECAST FLOOD
  * @FilePath: \AIFloodForecast\README.md
@@ -24,8 +24,25 @@ The idea of the project is to use the public data source from data-rich regions 
 The project is based on Python 3.10. The required packages are listed in `env.yml`. You can install them by running the following command:
 
 ```bash
+# simply install a new environment AIFF
 conda env create -f env.yml
+# then we install packages developed by ourselves as follows
+conda activate AIFF
+# xxx means your Github username; xxxxx means the name of the package; xx means the git-branch of the package
+pip install git+ssh://git@github.com/xxx/xxxxx.git@xx
 ```
+
+The packages we developed are listed as follows in [iHeadWater](https://github.com/iHeadWater):
+
+```bash
+torchhydro
+hydro_opendata
+hydro_privatedata
+hydroutils
+hydrodataset
+```
+
+We'd better use the latest version of the packages. You can check the version of the packages in Github.
 
 ## Usage
 
