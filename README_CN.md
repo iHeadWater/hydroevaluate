@@ -88,3 +88,7 @@ def read_attr_xrdataset(...):
             os.path.join())
   ...
 ```
+7.运行main.py文件
+```bash
+python main.py
+```
