@@ -1,19 +1,22 @@
 import os
-import hydrodataset as hds
-from torchhydro.configs.config import cmd, default_config_file, update_cfg
-from torchhydro.trainers.trainer import train_and_evaluate
 import warnings
+
+import hydrodataset as hds
 import yaml
+from hydroutils.hydro_file import get_lastest_file_in_a_dir
+from torchhydro.configs.config import cmd, default_config_file, update_cfg
+from torchhydro.datasets.data_dict import data_sources_dict
+from torchhydro.trainers.deep_hydro import DeepHydro
+from torchhydro.trainers.trainer import set_random_seed
 
 warnings.filterwarnings("ignore")
 
-cfg_path_dir = "scripts/conf/"
+# cfg_path_dir = "test_conf/"
 
 
-def run_normal_dl(
+def custom_cfg(
     cfgs_path,
     train_period=None,
-    valid_period=None,
     test_period=None,
 ):
     f = open(cfgs_path, encoding="utf-8")
@@ -21,8 +24,6 @@ def run_normal_dl(
 
     if train_period is None:
         train_period = cfgs["train_period"]
-    if valid_period is None:
-        valid_period = cfgs["valid_period"]
     if test_period is None:
         test_period = cfgs["test_period"]
 
@@ -36,6 +37,7 @@ def run_normal_dl(
         ctx=cfgs["data_cfgs"]["ctx"],
         model_name=cfgs["model_cfgs"]["model_name"],
         model_hyperparam=cfgs["model_cfgs"]["model_hyperparam"],
+        # weight_path=get_lastest_file_in_a_dir(cfgs["model_cfgs"]["weight_dir"]),
         loss_func=cfgs["training_cfgs"]["loss_func"],
         sampler=cfgs["data_cfgs"]["sampler"],
         dataset=cfgs["data_cfgs"]["dataset"],
@@ -44,7 +46,6 @@ def run_normal_dl(
         var_t=cfgs["var_t"],
         var_out=cfgs["var_out"],
         train_period=train_period,
-        valid_period=valid_period,
         test_period=test_period,
         opt=cfgs["training_cfgs"]["opt"],
         train_epoch=cfgs["training_cfgs"]["train_epoch"],
@@ -52,12 +53,26 @@ def run_normal_dl(
         te=cfgs["training_cfgs"]["te"],
         gage_id=cfgs["gage_id"],
         which_first_tensor=cfgs["training_cfgs"]["which_first_tensor"],
+        continue_train=cfgs["training_cfgs"]["continue_train"],
     )
 
     update_cfg(config_data, args)
-    train_and_evaluate(config_data)
-    print("All processes are finished!")
+    random_seed = config_data["training_cfgs"]["random_seed"]
+    set_random_seed(random_seed)
+    data_cfgs = config_data["data_cfgs"]
+    data_source_name = data_cfgs["data_source_name"]
+    data_source = data_sources_dict[data_source_name](
+        data_cfgs["data_path"], data_cfgs["download"]
+    )
+    return data_source, config_data
 
 
-if __name__ == '__main__':
-    run_normal_dl(cfg_path_dir + "v001.yml")
+def run_normal_dl(cfg_path):
+    model = DeepHydro(custom_cfg(cfg_path)[0], custom_cfg(cfg_path)[1])
+    eval_log, preds_xr, obss_xr = model.model_evaluate()
+    preds_xr.to_netcdf(os.path.join("results", "v002_test", "preds.nc"))
+    obss_xr.to_netcdf(os.path.join("results", "v002_test", "obss.nc"))
+    print(eval_log)
+
+
+# run_normal_dl(cfg_path_dir + "v002.yml")

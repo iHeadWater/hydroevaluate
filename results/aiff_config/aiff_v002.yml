@@ -1,17 +1,18 @@
 # record version info here as the following format:
 data_cfgs:
-  sub: "/v001"
+  sub: "/aiff_config"
   source: "GPM_GFS"
   source_path: "gpm_gfs_data"
   source_region: "US"
   download: 0
-  ctx: [0]
+  ctx: [1]
   dataset: "GPM_GFS_Dataset"
   sampler: "WuSampler"
   scaler: "GPM_GFS_Scaler"
 
 model_cfgs:
   model_name: "SPPLSTM"
+  weight_dir: "test_data/models/model_v20.pth"
   model_hyperparam:
     seq_length: 168
     forecast_length: 24
@@ -19,23 +20,21 @@ model_cfgs:
     n_hidden_states: 80
 
 training_cfgs:
-  train_epoch: 1
+  train_epoch: 80
   save_epoch: 1
-  te: 1
+  te: 80
   batch_size: 128
   loss_func: "RMSESum"
   opt: "Adam"
-  lr_scheduler: { 1: 5e-4, 2: 1e-4, 3: 1e-5 }
+  lr_scheduler: {1: 1e-4, 2: 5e-5, 3: 1e-5}
   which_first_tensor: "sequence"
-
-train_period: ["2017-01-10", "2017-03-21"]
-test_period: ["2019-03-21", "2019-04-10"]
-valid_period: ["2017-04-11", "2017-04-28"]
+  continue_train: False
+  
+train_period: ["2019-01-01", "2019-01-31"]
+test_period: ["2019-01-01", "2019-01-31"]
 
 gage_id:
-  - "05584500"
-  - "01544500"
-  - "01423000"
+  - '21401550'
 
-var_out: ["waterlevel"]
+var_out: ["streamflow"]
 var_t: ["tp"]
