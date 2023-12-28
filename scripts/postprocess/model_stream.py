@@ -1,44 +1,48 @@
 # pytest model_stream.py::test_auto_stream
 import os.path
+import pathlib as pl
+import smtplib
+from email.mime.text import MIMEText
 
 import numpy as np
 import pandas as pd
 import pytest
-import torch
 import urllib3 as ur
 from yaml import load, Loader
 
-import minio_api as ma
 import config
-import pathlib as pl
-import smtplib
-import email
-import xarray as xr
-import torchhydro.trainers.deep_hydro as dh
-from torchhydro.datasets.data_source_gpm_gfs import GPM_GFS
-import torchhydro.configs.config as tcc
-from test import custom_cfg, run_normal_dl
+import minio_api as ma
+from test import run_normal_dl
 
 work_dir = pl.Path(os.path.abspath(os.curdir)).parent.parent
-
-
-def test_nc2tensor(nc_path='test_data/gpm_gfs_2019_01_01_00_2019_01_31_23.nc'):
-    nc_ds = xr.open_dataset(os.path.join(work_dir, nc_path))
-    nc_df = nc_ds.to_dataframe()
 
 
 @pytest.mark.asyncio
 async def test_auto_stream():
     # test_data = await test_read_valid_data('001')
     test_config_path = os.path.join(work_dir, 'scripts/conf/v002.yml')
-    test_model_name = test_read_history(user_model_type='model', version='300')
-    test_model_path = os.path.join(work_dir, 'test_data/models', 'model_v'+test_model_name['model']+'.pth')
-    run_normal_dl(test_config_path)
-    # 下面的model_info是文件路径
-    # hydro_model_empty = dh.DeepHydro(data_source=custom_cfg(test_config_path)[0], cfgs=custom_cfg(test_config_path)[1])
-    # model_param = torch.load(test_model_path, map_location=torch.device('cpu'))
-    # hydro_model = hydro_model_empty.model_evaluate()
+    # 配置文件中的weight_dir应与模型保存位置相对应
+    # test_model_name = test_read_history(user_model_type='model', version='300')
+    eval_log, preds_xr, obss_xr = run_normal_dl(test_config_path)
     # https://zhuanlan.zhihu.com/p/631317974
+    # 保证隐私，授权码要保存在yaml配置文件中
+    test_email_config = os.path.join(work_dir, 'test_data/email_config.yml')
+    with open(test_email_config, 'r') as fp:
+        email_str = fp.read()
+    email_yml = load(email_str, Loader)
+    sendAddress = email_yml['send_address']
+    password = email_yml['authenticate_code']
+    server = smtplib.SMTP_SSL('smtp.qq.com', 465)
+    loginResult = server.login(sendAddress, password)
+    if loginResult == (235, b'Authentication successful'):
+        content = str(eval_log)
+        # https://service.mail.qq.com/detail/124/995
+        msg = MIMEText(content, 'plain', 'utf-8')
+        msg['From'] = 'nickname<'+sendAddress+'>'
+        msg['To'] = str(['nickname<'+addr+'>;' for addr in email_yml['to_address']])
+        msg['Subject'] = 'model_report'
+        server.sendmail(sendAddress, email_yml['to_address'], msg.as_string())
+        print('发送成功')
 
 
 def test_read_history(user_model_type='wasted', version='1'):

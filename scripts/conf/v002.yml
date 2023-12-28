@@ -9,6 +9,7 @@ data_cfgs:
   dataset: "GPM_GFS_Dataset"
   sampler: "WuSampler"
   scaler: "GPM_GFS_Scaler"
+  rolling: False
 
 model_cfgs:
   model_name: "SPPLSTM"

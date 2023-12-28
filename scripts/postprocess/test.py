@@ -1,4 +1,5 @@
 import os
+import pathlib
 import warnings
 
 import hydrodataset as hds
@@ -15,9 +16,9 @@ warnings.filterwarnings("ignore")
 
 
 def custom_cfg(
-    cfgs_path,
-    train_period=None,
-    test_period=None,
+        cfgs_path,
+        train_period=None,
+        test_period=None,
 ):
     f = open(cfgs_path, encoding="utf-8")
     cfgs = yaml.load(f.read(), Loader=yaml.FullLoader)
@@ -38,6 +39,7 @@ def custom_cfg(
         model_name=cfgs["model_cfgs"]["model_name"],
         model_hyperparam=cfgs["model_cfgs"]["model_hyperparam"],
         # weight_path=get_lastest_file_in_a_dir(cfgs["model_cfgs"]["weight_dir"]),
+        weight_path=os.path.join(pathlib.Path(os.path.abspath(os.curdir)).parent.parent, 'test_data/models/model_v20.pth'),
         loss_func=cfgs["training_cfgs"]["loss_func"],
         sampler=cfgs["data_cfgs"]["sampler"],
         dataset=cfgs["data_cfgs"]["dataset"],
@@ -54,6 +56,7 @@ def custom_cfg(
         gage_id=cfgs["gage_id"],
         which_first_tensor=cfgs["training_cfgs"]["which_first_tensor"],
         continue_train=cfgs["training_cfgs"]["continue_train"],
+        rolling=cfgs['data_cfgs']['rolling']
     )
 
     update_cfg(config_data, args)
@@ -70,9 +73,9 @@ def custom_cfg(
 def run_normal_dl(cfg_path):
     model = DeepHydro(custom_cfg(cfg_path)[0], custom_cfg(cfg_path)[1])
     eval_log, preds_xr, obss_xr = model.model_evaluate()
-    preds_xr.to_netcdf(os.path.join("results", "v002_test", "preds.nc"))
-    obss_xr.to_netcdf(os.path.join("results", "v002_test", "obss.nc"))
-    print(eval_log)
-
+    # preds_xr.to_netcdf(os.path.join("results", "v002_test", "preds.nc"))
+    # obss_xr.to_netcdf(os.path.join("results", "v002_test", "obss.nc"))
+    # print(eval_log)
+    return eval_log, preds_xr, obss_xr
 
 # run_normal_dl(cfg_path_dir + "v002.yml")
