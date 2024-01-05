@@ -56,7 +56,8 @@ def custom_cfg(
         gage_id=cfgs["gage_id"],
         which_first_tensor=cfgs["training_cfgs"]["which_first_tensor"],
         continue_train=cfgs["training_cfgs"]["continue_train"],
-        rolling=cfgs['data_cfgs']['rolling']
+        rolling=cfgs['data_cfgs']['rolling'],
+        metrics=cfgs['test_cfgs']['metrics']
     )
 
     update_cfg(config_data, args)

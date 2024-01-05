@@ -30,6 +30,9 @@ training_cfgs:
   lr_scheduler: {1: 1e-4, 2: 5e-5, 3: 1e-5}
   which_first_tensor: "sequence"
   continue_train: False
+
+test_cfgs:
+  metrics: ['NSE', 'KGE12']
   
 train_period: ["2019-01-01", "2019-01-31"]
 test_period: ["2019-01-01", "2019-01-31"]
