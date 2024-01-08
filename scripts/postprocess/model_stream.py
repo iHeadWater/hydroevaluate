@@ -28,24 +28,27 @@ async def test_auto_stream():
     # 配置文件中的weight_dir应与模型保存位置相对应
     # test_model_name = test_read_history(user_model_type='model', version='300')
     eval_log, preds_xr, obss_xr = run_normal_dl(test_config_path)
-    yaml.dump(eval_log, 'eval_log.yml', Dumper=Dumper)
+    with open('eval_log.yml', mode='r+') as fp:
+        last_eval_log = yaml.load(fp, Loader=Loader)
+        compare_history_report(eval_log, last_eval_log)
+        yaml.dump(eval_log, fp, Dumper=Dumper)
     # https://zhuanlan.zhihu.com/p/631317974
     test_email_config = os.path.join(work_dir, 'test_data/email_config.yml')
     with open(test_email_config, 'r') as fp:
         email_str = fp.read()
     email_yml = load(email_str, Loader)
-    sendAddress = email_yml['send_address']
+    send_address = email_yml['send_address']
     password = email_yml['authenticate_code']
     server = smtplib.SMTP_SSL('smtp.qq.com', 465)
-    loginResult = server.login(sendAddress, password)
-    if loginResult == (235, b'Authentication successful'):
+    login_result = server.login(send_address, password)
+    if login_result == (235, b'Authentication successful'):
         content = str(eval_log)
         # https://service.mail.qq.com/detail/124/995
         msg = MIMEText(content, 'plain', 'utf-8')
-        msg['From'] = 'nickname<' + sendAddress + '>'
+        msg['From'] = 'nickname<' + send_address + '>'
         msg['To'] = str(['nickname<' + addr + '>;' for addr in email_yml['to_address']])
         msg['Subject'] = 'model_report'
-        server.sendmail(sendAddress, email_yml['to_address'], msg.as_string())
+        server.sendmail(send_address, email_yml['to_address'], msg.as_string())
         print('发送成功')
     else:
         print('发送失败')
@@ -108,12 +111,11 @@ def test_read_valid_data(version='001', need_cache=False):
         elif ext_name == 'json':
             json_source = itk.open_json(obj, storage_options=storage_option)
             json_dict = json_source.read()
-        # need intake-geopandas
         elif ext_name == 'shp':
-            # itk.open_shapefile will give fiona.errors.DriverError:
-            # '/vsimem/6a1a01e3b26340f4ab2f31bac440a436' not recognized as a supported file format
-            # https://github.com/geopandas/geopandas/issues/3129
             shp_source = itk.open_shapefile(obj, use_fsspec=True, storage_options=storage_option)
+            # fiona.errors.DriverError: '/vsimem/6a1a01e3b26340f4ab2f31bac440a436'
+            # not recognized as a supported file format probably because of GDAL is too old
+            # https://github.com/geopandas/geopandas/issues/3129
             if need_cache is True:
                 shp_source.to_file(path=obj)
         elif 'grb2' in obj:
@@ -145,8 +147,15 @@ def read_yaml(version):
     return conf_yaml
 
 
-def compare_history_report():
+def compare_history_report(new_eval_log, old_eval_log):
     # https://doi.org/10.1016/j.envsoft.2019.05.001
-    with open('eval_log.yml', 'r') as fp:
-        email_str = fp.read()
-    email_yml = load(email_str, Loader)
+    if (new_eval_log['NSE'] > old_eval_log['NSE']) & (new_eval_log['KGE12'] > old_eval_log['KGE12']):
+        new_eval_log['review'] = '比上次更好些，再接再厉'
+    elif (new_eval_log['NSE'] > old_eval_log['NSE']) & (new_eval_log['KGE12'] < old_eval_log['KGE12']):
+        new_eval_log['review'] = '拟合比以前更好，但KGE下降，对洪峰预报可能有问题'
+    elif (new_eval_log['NSE'] < old_eval_log['NSE']) & (new_eval_log['KGE12'] > old_eval_log['KGE12']):
+        new_eval_log['review'] = '拟合结果更差了，问题在哪里？KGE更好一些，也许并没有那么差'
+    elif (new_eval_log['NSE'] < old_eval_log['NSE']) & (new_eval_log['KGE12'] < old_eval_log['KGE12']):
+        new_eval_log['review'] = '白改了，下次再说吧'
+    else:
+        new_eval_log['review'] = '和上次相等，还需要再提高'
