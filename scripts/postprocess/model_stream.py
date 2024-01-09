@@ -1,44 +1,44 @@
 # pytest model_stream.py::test_auto_stream
+import json
 import os.path
 import pathlib as pl
 import smtplib
 from email.mime.text import MIMEText
 
+import geopandas as gpd
 import intake as itk
 import numpy as np
 import pandas as pd
-import pytest
 import s3fs
 import urllib3 as ur
 import xarray as xr
-import yaml
 from xarray import Dataset
-from yaml import load, Loader, Dumper
+from yaml import load, Loader
 
-import config
 from test import run_normal_dl
 
 work_dir = pl.Path(os.path.abspath(os.curdir)).parent.parent
 
 
-@pytest.mark.asyncio
-async def test_auto_stream():
-    # test_data = test_read_valid_data('001')
+# 把test和model_stream合并，然后在主方法中update_cfg
+def test_auto_stream():
+    remote_obj_array = ['1_02051500.nc', '86_21401550.nc', 'camelsus_attributes.nc', 'merge_streamflow.nc']
+    test_data = test_read_valid_data(remote_obj_array)
     test_config_path = os.path.join(work_dir, 'scripts/conf/v002.yml')
     # 配置文件中的weight_dir应与模型保存位置相对应
     # test_model_name = test_read_history(user_model_type='model', version='300')
     eval_log, preds_xr, obss_xr = run_normal_dl(test_config_path)
-    with open('eval_log.yml', mode='r+') as fp:
-        last_eval_log = yaml.load(fp, Loader=Loader)
+    with open('eval_log.json', mode='a+') as fp:
+        last_eval_log = json.load(fp)
         compare_history_report(eval_log, last_eval_log)
-        yaml.dump(eval_log, fp, Dumper=Dumper)
+        json.dump(eval_log, fp)
     # https://zhuanlan.zhihu.com/p/631317974
-    test_email_config = os.path.join(work_dir, 'test_data/email_config.yml')
+    test_email_config = os.path.join(work_dir, 'test_data/privacy_config.yml')
     with open(test_email_config, 'r') as fp:
         email_str = fp.read()
     email_yml = load(email_str, Loader)
-    send_address = email_yml['send_address']
-    password = email_yml['authenticate_code']
+    send_address = email_yml['email']['send_address']
+    password = email_yml['email']['authenticate_code']
     server = smtplib.SMTP_SSL('smtp.qq.com', 465)
     login_result = server.login(send_address, password)
     if login_result == (235, b'Authentication successful'):
@@ -46,9 +46,9 @@ async def test_auto_stream():
         # https://service.mail.qq.com/detail/124/995
         msg = MIMEText(content, 'plain', 'utf-8')
         msg['From'] = 'nickname<' + send_address + '>'
-        msg['To'] = str(['nickname<' + addr + '>;' for addr in email_yml['to_address']])
+        msg['To'] = str(['nickname<' + addr + '>;' for addr in email_yml['email']['to_address']])
         msg['Subject'] = 'model_report'
-        server.sendmail(send_address, email_yml['to_address'], msg.as_string())
+        server.sendmail(send_address, email_yml['email']['to_address'], msg.as_string())
         print('发送成功')
     else:
         print('发送失败')
@@ -80,58 +80,58 @@ def test_read_history(user_model_type='wasted', version='1'):
         return history_dict
 
 
-def test_read_valid_data(version='001', need_cache=False):
-    client_mc = config.mc
-    conf_yaml = read_yaml(version)
-    test_period = conf_yaml['test_period']
-    start_time = pd.to_datetime(test_period[0], format='%Y-%m-%d %H:%M:%S').tz_localize(tz='Asia/Shanghai')
-    end_time = pd.to_datetime(test_period[1], format='%Y-%m-%d %H:%M:%S').tz_localize(tz='Asia/Shanghai')
-    obj_time_list = pd.to_datetime([obj.last_modified for obj in client_mc.list_objects(bucket_name='forestbat-private',
-                                                                                        recursive='True')]).tz_convert(
-        tz='Asia/Shanghai')
-    time_indexes = obj_time_list[(obj_time_list > start_time) & (obj_time_list < end_time)]
-    # nc、csv、grib2、txt、json、yaml、zip
-    obj_down_array = [obj.object_name for obj in
-                      client_mc.list_objects(bucket_name='forestbat-private', recursive='True') if
-                      obj.last_modified in time_indexes]
+def test_read_valid_data(remote_obj_array, need_cache=False):
     storage_option = {'key': 'xxx', 'secret': 'yyy',
                       'client_kwargs': {'endpoint_url': 'zzz'}}
+    mc_fs = s3fs.S3FileSystem(endpoint_url=storage_option['client_kwargs']['endpoint_url'],
+                              key=storage_option['key'], secret=storage_option['secret'])
     # https://intake.readthedocs.io/en/latest/plugin-directory.html
-    for obj in obj_down_array:
-        ext_name = obj.split('.')[1]
-        if ext_name == 'csv':
-            csv_dataset = pd.read_csv(obj, storage_options=storage_option)
+    data_obj_array = []
+    for obj in remote_obj_array:
+        if '.' not in obj:
+            txt_source = itk.open_textfile(obj, storage_options=storage_option)
+            data_obj_array.append(txt_source)
             if need_cache is True:
-                csv_dataset.to_csv(obj)
-        elif (ext_name == 'nc') | (ext_name == 'nc4'):
-            nc_source = itk.open_netcdf(obj, storage_options=storage_option)
-            nc_dataset: Dataset = nc_source.read()
-            if need_cache is True:
-                nc_dataset.to_netcdf(path=obj)
-        elif ext_name == 'json':
-            json_source = itk.open_json(obj, storage_options=storage_option)
-            json_dict = json_source.read()
-        elif ext_name == 'shp':
-            shp_source = itk.open_shapefile(obj, use_fsspec=True, storage_options=storage_option)
-            # fiona.errors.DriverError: '/vsimem/6a1a01e3b26340f4ab2f31bac440a436'
-            # not recognized as a supported file format probably because of GDAL is too old
-            # https://github.com/geopandas/geopandas/issues/3129
-            if need_cache is True:
-                shp_source.to_file(path=obj)
-        elif 'grb2' in obj:
-            # ValueError: unrecognized engine cfgrib must be one of: ['netcdf4', 'h5netcdf', 'scipy', 'store', 'zarr']
-            # https://blog.csdn.net/weixin_44052055/article/details/108658464?spm=1001.2014.3001.5501
-            fs_grib = s3fs.S3FileSystem(endpoint_url=storage_option['client_kwargs']['endpoint_url'],
-                                        key=storage_option['key'], secret=storage_option['secret'])
-            remote_grib_obj = fs_grib.open(obj)
-            grib_ds = xr.open_dataset(remote_grib_obj)
-            if need_cache is True:
-                grib_ds.to_netcdf(obj)
-        elif ext_name == 'txt':
-            shp_source = itk.open_textfile(obj, storage_options=storage_option)
-            if need_cache is True:
-                shp_source.to_file(path=obj)
-    return obj_down_array
+                txt_source.to_file(path=obj)
+        else:
+            ext_name = obj.split('.')[1]
+            if ext_name == 'csv':
+                csv_dataset = pd.read_csv(obj, storage_options=storage_option)
+                data_obj_array.append(csv_dataset)
+                if need_cache is True:
+                    csv_dataset.to_csv(obj)
+            elif (ext_name == 'nc') | (ext_name == 'nc4'):
+                nc_source = itk.open_netcdf(obj, storage_options=storage_option)
+                nc_dataset: Dataset = nc_source.read()
+                data_obj_array.append(nc_dataset)
+                if need_cache is True:
+                    nc_dataset.to_netcdf(path=obj)
+            elif ext_name == 'json':
+                json_source = itk.open_json(obj, storage_options=storage_option)
+                json_dict = json_source.read()
+                data_obj_array.append(json_dict)
+            elif ext_name == 'shp':
+                # Can't run directly, see this: https://github.com/geopandas/geopandas/issues/3129
+                remote_shp_obj = mc_fs.open(obj)
+                shp_gdf = gpd.read_file(remote_shp_obj, engine='pyogrio')
+                data_obj_array.append(shp_gdf)
+                if need_cache is True:
+                    shp_gdf.to_file(path=obj)
+            elif 'grb2' in obj:
+                # ValueError: unrecognized engine cfgrib must be one of: ['netcdf4', 'h5netcdf', 'scipy', 'store', 'zarr']
+                # https://blog.csdn.net/weixin_44052055/article/details/108658464?spm=1001.2014.3001.5501
+                # 似乎只能用conda来装eccodes
+                remote_grib_obj = mc_fs.open(obj)
+                grib_ds = xr.open_dataset(remote_grib_obj)
+                data_obj_array.append(grib_ds)
+                if need_cache is True:
+                    grib_ds.to_netcdf(obj)
+            elif ext_name == 'txt':
+                txt_source = itk.open_textfiles(obj, storage_options=storage_option)
+                data_obj_array.append(txt_source)
+                if need_cache is True:
+                    txt_source.to_file(path=obj)
+    return data_obj_array
 
 
 def read_yaml(version):
@@ -148,14 +148,20 @@ def read_yaml(version):
 
 
 def compare_history_report(new_eval_log, old_eval_log):
+    if old_eval_log is None:
+        old_eval_log = {'NSE of streamflow': 0, 'KGE of streamflow': 0}
     # https://doi.org/10.1016/j.envsoft.2019.05.001
-    if (new_eval_log['NSE'] > old_eval_log['NSE']) & (new_eval_log['KGE12'] > old_eval_log['KGE12']):
+    if (new_eval_log['NSE of streamflow'] > old_eval_log['NSE of streamflow']) & (
+            new_eval_log['KGE of streamflow'] > old_eval_log['KGE of streamflow']):
         new_eval_log['review'] = '比上次更好些，再接再厉'
-    elif (new_eval_log['NSE'] > old_eval_log['NSE']) & (new_eval_log['KGE12'] < old_eval_log['KGE12']):
+    elif (new_eval_log['NSE of streamflow'] > old_eval_log['NSE of streamflow']) & (
+            new_eval_log['KGE of streamflow'] < old_eval_log['KGE of streamflow']):
         new_eval_log['review'] = '拟合比以前更好，但KGE下降，对洪峰预报可能有问题'
-    elif (new_eval_log['NSE'] < old_eval_log['NSE']) & (new_eval_log['KGE12'] > old_eval_log['KGE12']):
+    elif (new_eval_log['NSE of streamflow'] < old_eval_log['NSE of streamflow']) & (
+            new_eval_log['KGE of streamflow'] > old_eval_log['KGE of streamflow']):
         new_eval_log['review'] = '拟合结果更差了，问题在哪里？KGE更好一些，也许并没有那么差'
-    elif (new_eval_log['NSE'] < old_eval_log['NSE']) & (new_eval_log['KGE12'] < old_eval_log['KGE12']):
+    elif (new_eval_log['NSE of streamflow'] < old_eval_log['NSE of streamflow']) & (
+            new_eval_log['KGE of streamflow'] < old_eval_log['KGE of streamflow']):
         new_eval_log['review'] = '白改了，下次再说吧'
     else:
         new_eval_log['review'] = '和上次相等，还需要再提高'
