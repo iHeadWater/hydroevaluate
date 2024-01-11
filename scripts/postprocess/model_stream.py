@@ -1,10 +1,11 @@
 # pytest model_stream.py::test_auto_stream
 import json
 import os.path
+import pathlib
 import pathlib as pl
 import smtplib
 from email.mime.text import MIMEText
-
+import hydrodataset as hds
 import geopandas as gpd
 import intake as itk
 import numpy as np
@@ -12,33 +13,33 @@ import pandas as pd
 import s3fs
 import urllib3 as ur
 import xarray as xr
+import yaml
+from torchhydro.configs.config import default_config_file, update_cfg, cmd
+from torchhydro.datasets.data_dict import data_sources_dict
+from torchhydro.trainers.deep_hydro import DeepHydro
+from torchhydro.trainers.trainer import set_random_seed
 from xarray import Dataset
 from yaml import load, Loader
 
-from test import run_normal_dl
 
 work_dir = pl.Path(os.path.abspath(os.curdir)).parent.parent
+with open(os.path.join(work_dir, 'test_data/privacy_config.yml'), 'r') as fp:
+    private_str = fp.read()
+private_yml = yaml.load(private_str, Loader)
 
 
-# 把test和model_stream合并，然后在主方法中update_cfg
 def test_auto_stream():
-    remote_obj_array = ['1_02051500.nc', '86_21401550.nc', 'camelsus_attributes.nc', 'merge_streamflow.nc']
-    test_data = test_read_valid_data(remote_obj_array)
     test_config_path = os.path.join(work_dir, 'scripts/conf/v002.yml')
     # 配置文件中的weight_dir应与模型保存位置相对应
-    # test_model_name = test_read_history(user_model_type='model', version='300')
+    test_model_name = test_read_history(user_model_type='model', version='300')
     eval_log, preds_xr, obss_xr = run_normal_dl(test_config_path)
     with open('eval_log.json', mode='a+') as fp:
         last_eval_log = json.load(fp)
         compare_history_report(eval_log, last_eval_log)
         json.dump(eval_log, fp)
     # https://zhuanlan.zhihu.com/p/631317974
-    test_email_config = os.path.join(work_dir, 'test_data/privacy_config.yml')
-    with open(test_email_config, 'r') as fp:
-        email_str = fp.read()
-    email_yml = load(email_str, Loader)
-    send_address = email_yml['email']['send_address']
-    password = email_yml['email']['authenticate_code']
+    send_address = private_yml['email']['send_address']
+    password = private_yml['email']['authenticate_code']
     server = smtplib.SMTP_SSL('smtp.qq.com', 465)
     login_result = server.login(send_address, password)
     if login_result == (235, b'Authentication successful'):
@@ -46,9 +47,9 @@ def test_auto_stream():
         # https://service.mail.qq.com/detail/124/995
         msg = MIMEText(content, 'plain', 'utf-8')
         msg['From'] = 'nickname<' + send_address + '>'
-        msg['To'] = str(['nickname<' + addr + '>;' for addr in email_yml['email']['to_address']])
+        msg['To'] = str(['nickname<' + addr + '>;' for addr in private_yml['email']['to_address']])
         msg['Subject'] = 'model_report'
-        server.sendmail(send_address, email_yml['email']['to_address'], msg.as_string())
+        server.sendmail(send_address, private_yml['email']['to_address'], msg.as_string())
         print('发送成功')
     else:
         print('发送失败')
@@ -80,14 +81,14 @@ def test_read_history(user_model_type='wasted', version='1'):
         return history_dict
 
 
-def test_read_valid_data(remote_obj_array, need_cache=False):
-    storage_option = {'key': 'xxx', 'secret': 'yyy',
-                      'client_kwargs': {'endpoint_url': 'zzz'}}
+def test_read_valid_data(minio_obj_array, need_cache=False):
+    storage_option = {'key': private_yml['minio']['access_key'], 'secret': private_yml['minio']['secret'],
+                      'client_kwargs': {'endpoint_url': private_yml['minio']['client_endpoint']}}
     mc_fs = s3fs.S3FileSystem(endpoint_url=storage_option['client_kwargs']['endpoint_url'],
                               key=storage_option['key'], secret=storage_option['secret'])
     # https://intake.readthedocs.io/en/latest/plugin-directory.html
     data_obj_array = []
-    for obj in remote_obj_array:
+    for obj in minio_obj_array:
         if '.' not in obj:
             txt_source = itk.open_textfile(obj, storage_options=storage_option)
             data_obj_array.append(txt_source)
@@ -151,6 +152,7 @@ def compare_history_report(new_eval_log, old_eval_log):
     if old_eval_log is None:
         old_eval_log = {'NSE of streamflow': 0, 'KGE of streamflow': 0}
     # https://doi.org/10.1016/j.envsoft.2019.05.001
+    # 需要再算一下洪量
     if (new_eval_log['NSE of streamflow'] > old_eval_log['NSE of streamflow']) & (
             new_eval_log['KGE of streamflow'] > old_eval_log['KGE of streamflow']):
         new_eval_log['review'] = '比上次更好些，再接再厉'
@@ -165,3 +167,74 @@ def compare_history_report(new_eval_log, old_eval_log):
         new_eval_log['review'] = '白改了，下次再说吧'
     else:
         new_eval_log['review'] = '和上次相等，还需要再提高'
+
+
+def custom_cfg(
+        cfgs_path,
+):
+    f = open(cfgs_path, encoding="utf-8")
+    cfgs = yaml.load(f.read(), Loader=yaml.FullLoader)
+    config_data = default_config_file()
+    remote_obj_array = ['1_02051500.nc', '86_21401550.nc', 'camelsus_attributes.nc', 'merge_streamflow.nc']
+    bucket_name = 'forestbat-private'
+    folder_prefix = 'predicate_data'
+    minio_obj_list = ['s3://'+bucket_name+'/'+folder_prefix+'/'+i for i in remote_obj_array]
+    test_data_list = test_read_valid_data(minio_obj_list)
+    args = cmd(
+        sub=cfgs["data_cfgs"]["sub"],
+        source=cfgs["data_cfgs"]["source"],
+        source_region=cfgs["data_cfgs"]["source_region"],
+        source_path=hds.ROOT_DIR,
+        streamflow_source_path=test_data_list[3],
+        rainfall_source_path=test_data_list[0:2],
+        attributes_path=test_data_list[2],
+        download=0,
+        ctx=cfgs["data_cfgs"]["ctx"],
+        model_name=cfgs["model_cfgs"]["model_name"],
+        model_hyperparam=cfgs["model_cfgs"]["model_hyperparam"],
+        weight_path=os.path.join(pathlib.Path(os.path.abspath(os.curdir)).parent.parent,
+                                 'test_data/models/model_v20.pth'),
+        loss_func=cfgs["training_cfgs"]["loss_func"],
+        sampler=cfgs["data_cfgs"]["sampler"],
+        dataset=cfgs["data_cfgs"]["dataset"],
+        scaler=cfgs["data_cfgs"]["scaler"],
+        batch_size=cfgs["training_cfgs"]["batch_size"],
+        var_t=cfgs["var_t"],
+        var_out=cfgs["var_out"],
+        # train_period=train_period,
+        test_period=[
+            {"start": "2017-07-01", "end": "2017-09-29"},
+        ],  # 该范围为降水的时间范围，流量会整体往后推24h
+        opt=cfgs["training_cfgs"]["opt"],
+        train_epoch=cfgs["training_cfgs"]["train_epoch"],
+        save_epoch=cfgs["training_cfgs"]["save_epoch"],
+        te=cfgs["training_cfgs"]["te"],
+        gage_id=["86_21401550"],
+        which_first_tensor=cfgs["training_cfgs"]["which_first_tensor"],
+        continue_train=cfgs["training_cfgs"]["continue_train"],
+        rolling=cfgs['data_cfgs']['rolling'],
+        metrics=cfgs['test_cfgs']['metrics'],
+        endpoint_url=private_yml['minio']['server_url'],
+        access_key=private_yml['minio']['access_key'],
+        secret_key=private_yml['minio']['secret'],
+        bucket_name=bucket_name,
+        folder_prefix=folder_prefix,
+    )
+    update_cfg(config_data, args)
+    random_seed = config_data["training_cfgs"]["random_seed"]
+    set_random_seed(random_seed)
+    data_cfgs = config_data["data_cfgs"]
+    data_source_name = data_cfgs["data_source_name"]
+    data_source = data_sources_dict[data_source_name](
+        data_cfgs["data_path"], data_cfgs["download"]
+    )
+    return data_source, config_data, minio_obj_list
+
+
+def run_normal_dl(cfg_path):
+    model = DeepHydro(custom_cfg(cfg_path)[0], custom_cfg(cfg_path)[1])
+    eval_log, preds_xr, obss_xr = model.model_evaluate()
+    # preds_xr.to_netcdf(os.path.join("results", "v002_test", "preds.nc"))
+    # obss_xr.to_netcdf(os.path.join("results", "v002_test", "obss.nc"))
+    # print(eval_log)
+    return eval_log, preds_xr, obss_xr
