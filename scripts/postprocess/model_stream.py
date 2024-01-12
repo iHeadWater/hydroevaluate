@@ -30,13 +30,24 @@ private_yml = yaml.load(private_str, Loader)
 
 def test_auto_stream():
     test_config_path = os.path.join(work_dir, 'scripts/conf/v002.yml')
+    with open(test_config_path, 'r+') as fp:
+        test_conf_yml = yaml.load(fp, Loader)
     # 配置文件中的weight_dir应与模型保存位置相对应
-    test_model_name = test_read_history(user_model_type='model', version='300')
+    # test_model_name = test_read_history(user_model_type='model', version='300')
     eval_log, preds_xr, obss_xr = run_normal_dl(test_config_path)
-    with open('eval_log.json', mode='a+') as fp:
+    with open('eval_log.json', mode='a+', encoding='utf-8') as fp:
+        fp.seek(0)
         last_eval_log = json.load(fp)
-        compare_history_report(eval_log, last_eval_log)
-        json.dump(eval_log, fp)
+    compare_history_report(eval_log, last_eval_log)
+    '''
+    fp.write(test_conf_yml['data_cfgs']['sampler'] + '\n')
+    fp.write(test_conf_yml['model_cfgs']['model_name'] + '\n')
+    fp.write(test_conf_yml['model_cfgs']['model_hyperparam'] + '\n')
+    '''
+    eval_log['sampler'] = test_conf_yml['data_cfgs']['sampler']
+    eval_log['model_name'] = test_conf_yml['model_cfgs']['model_name']
+    eval_log['model_hyperparam'] = test_conf_yml['model_cfgs']['model_hyperparam']
+    # json.dump(eval_log, fp)
     # https://zhuanlan.zhihu.com/p/631317974
     send_address = private_yml['email']['send_address']
     password = private_yml['email']['authenticate_code']
@@ -153,17 +164,17 @@ def compare_history_report(new_eval_log, old_eval_log):
         old_eval_log = {'NSE of streamflow': 0, 'KGE of streamflow': 0}
     # https://doi.org/10.1016/j.envsoft.2019.05.001
     # 需要再算一下洪量
-    if (new_eval_log['NSE of streamflow'] > old_eval_log['NSE of streamflow']) & (
-            new_eval_log['KGE of streamflow'] > old_eval_log['KGE of streamflow']):
+    if (list(new_eval_log['NSE of streamflow']) > old_eval_log['NSE of streamflow']) & (
+            list(new_eval_log['KGE of streamflow']) > old_eval_log['KGE of streamflow']):
         new_eval_log['review'] = '比上次更好些，再接再厉'
-    elif (new_eval_log['NSE of streamflow'] > old_eval_log['NSE of streamflow']) & (
-            new_eval_log['KGE of streamflow'] < old_eval_log['KGE of streamflow']):
+    elif (list(new_eval_log['NSE of streamflow']) > old_eval_log['NSE of streamflow']) & (
+            list(new_eval_log['KGE of streamflow']) < old_eval_log['KGE of streamflow']):
         new_eval_log['review'] = '拟合比以前更好，但KGE下降，对洪峰预报可能有问题'
-    elif (new_eval_log['NSE of streamflow'] < old_eval_log['NSE of streamflow']) & (
-            new_eval_log['KGE of streamflow'] > old_eval_log['KGE of streamflow']):
+    elif (list(new_eval_log['NSE of streamflow']) < old_eval_log['NSE of streamflow']) & (
+            list(new_eval_log['KGE of streamflow']) > old_eval_log['KGE of streamflow']):
         new_eval_log['review'] = '拟合结果更差了，问题在哪里？KGE更好一些，也许并没有那么差'
-    elif (new_eval_log['NSE of streamflow'] < old_eval_log['NSE of streamflow']) & (
-            new_eval_log['KGE of streamflow'] < old_eval_log['KGE of streamflow']):
+    elif (list(new_eval_log['NSE of streamflow']) < old_eval_log['NSE of streamflow']) & (
+            list(new_eval_log['KGE of streamflow']) < old_eval_log['KGE of streamflow']):
         new_eval_log['review'] = '白改了，下次再说吧'
     else:
         new_eval_log['review'] = '和上次相等，还需要再提高'
@@ -188,19 +199,30 @@ def custom_cfg(
         streamflow_source_path=test_data_list[3],
         rainfall_source_path=test_data_list[0:2],
         attributes_path=test_data_list[2],
+        gfs_source_path="",
         download=0,
         ctx=cfgs["data_cfgs"]["ctx"],
         model_name=cfgs["model_cfgs"]["model_name"],
-        model_hyperparam=cfgs["model_cfgs"]["model_hyperparam"],
+        model_hyperparam={
+            "seq_length": 168,
+            "forecast_length": 24,
+            "n_output": 1,
+            "n_hidden_states": 60,
+            "dropout": 0.25,
+            "len_c": 15,
+            "in_channels": 1,
+            "out_channels": 8
+        },
         weight_path=os.path.join(pathlib.Path(os.path.abspath(os.curdir)).parent.parent,
-                                 'test_data/models/model_v20.pth'),
+                                 'test_data/models/best_model.pth'),
         loss_func=cfgs["training_cfgs"]["loss_func"],
         sampler=cfgs["data_cfgs"]["sampler"],
         dataset=cfgs["data_cfgs"]["dataset"],
         scaler=cfgs["data_cfgs"]["scaler"],
         batch_size=cfgs["training_cfgs"]["batch_size"],
-        var_t=cfgs["var_t"],
-        var_out=cfgs["var_out"],
+        var_t=[["tp"]],
+        var_c=cfgs['data_cfgs']['constant_cols'],
+        var_out=["streamflow"],
         # train_period=train_period,
         test_period=[
             {"start": "2017-07-01", "end": "2017-09-29"},
@@ -209,7 +231,7 @@ def custom_cfg(
         train_epoch=cfgs["training_cfgs"]["train_epoch"],
         save_epoch=cfgs["training_cfgs"]["save_epoch"],
         te=cfgs["training_cfgs"]["te"],
-        gage_id=["86_21401550"],
+        gage_id=["1_02051500", "86_21401550"],
         which_first_tensor=cfgs["training_cfgs"]["which_first_tensor"],
         continue_train=cfgs["training_cfgs"]["continue_train"],
         rolling=cfgs['data_cfgs']['rolling'],
@@ -219,6 +241,8 @@ def custom_cfg(
         secret_key=private_yml['minio']['secret'],
         bucket_name=bucket_name,
         folder_prefix=folder_prefix,
+        # stat_dict_file=os.path.join(train_path, "GPM_GFS_Scaler_2_stat.json"),
+        user='yyy'
     )
     update_cfg(config_data, args)
     random_seed = config_data["training_cfgs"]["random_seed"]
@@ -228,7 +252,7 @@ def custom_cfg(
     data_source = data_sources_dict[data_source_name](
         data_cfgs["data_path"], data_cfgs["download"]
     )
-    return data_source, config_data, minio_obj_list
+    return data_source, config_data #, minio_obj_list
 
 
 def run_normal_dl(cfg_path):

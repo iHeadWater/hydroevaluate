@@ -10,9 +10,26 @@ data_cfgs:
   sampler: "WuSampler"
   scaler: "GPM_GFS_Scaler"
   rolling: False
+  "constant_cols": [
+    "area",
+    "ele_mt_smn",
+    "slp_dg_sav",
+    "sgr_dk_sav",
+    "for_pc_sse",
+    "glc_cl_smj",
+    "run_mm_syr",
+    "inu_pc_slt",
+    "cmi_ix_syr",
+    "aet_mm_syr",
+    "snw_pc_syr",
+    "swc_pc_syr",
+    "gwt_cm_sav",
+    "cly_pc_sav",
+    "dor_pc_pva"
+  ]
 
 model_cfgs:
-  model_name: "SPPLSTM"
+  model_name: "SPPLSTM2"
   weight_dir: "test_data/models/model_v20.pth"
   model_hyperparam:
     seq_length: 168
@@ -37,9 +54,6 @@ test_cfgs:
   
 train_period: ["2019-01-01", "2019-01-31"]
 test_period: ["2019-01-01", "2019-01-31"]
-
-gage_id:
-  - '21401550'
 
 var_out: ["streamflow"]
 var_t: ["tp"]
