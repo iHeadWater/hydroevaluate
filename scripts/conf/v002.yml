@@ -30,7 +30,7 @@ data_cfgs:
 
 model_cfgs:
   model_name: "SPPLSTM2"
-  weight_dir: "test_data/models/model_v20.pth"
+  weight_dir: "test_data/models/best_model.pth"
   model_hyperparam:
     seq_length: 168
     forecast_length: 24
@@ -50,10 +50,10 @@ training_cfgs:
   continue_train: False
 
 test_cfgs:
-  metrics: ['NSE', 'KGE']
+  metrics: ['NSE', 'KGE', 'Bias', 'RMSE']
   
-train_period: ["2019-01-01", "2019-01-31"]
-test_period: ["2019-01-01", "2019-01-31"]
+train_period: ["2017-07-01", "2017-09-29"]
+test_period: ["2017-07-01", "2017-09-29"]
 
 var_out: ["streamflow"]
 var_t: ["tp"]

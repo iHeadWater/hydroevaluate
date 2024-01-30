@@ -15,7 +15,7 @@ def generate_forecast_times_updated(date_str, hour_str, num):
 
     # Define the forecasting hours
     forecast_hours = [0, 6, 12, 18]
-    
+
     # Find the closest forecast hour before the given hour
     closest_forecast_hour = max([hour for hour in forecast_hours if hour <= given_hour])
 
@@ -43,11 +43,11 @@ def generate_forecast_times_updated(date_str, hour_str, num):
 # Combining both functions to fetch the latest data points
 
 def fetch_latest_data(
-    date_np = np.datetime64("2017-01-01"),
-    time_str = "00",
-    bbbox = (-125, 25, -66, 50),
-    num = 3
-    ):
+        date_np=np.datetime64("2017-01-01"),
+        time_str="00",
+        bbbox=(-125, 25, -66, 50),
+        num=3
+):
     forecast_times = generate_forecast_times_updated(date_np, time_str, num)
     gfs_reader = minio.GFSReader()
     time = forecast_times[0]
@@ -79,16 +79,17 @@ def fetch_latest_data(
         data = data.rename({'valid_time': 'time'})
         latest_data = xr.concat([latest_data, data], dim='time')
         # print(latest_data)
-    
+
     latest_data = latest_data.to_dataset()
     latest_data = latest_data.transpose('time', 'lon', 'lat')
     # print(latest_data)
     return latest_data
 
+
 # Testing the combined function
 # mask = xr.open_dataset('/home/xushuolong1/flood_data_preprocess/GPM_data_preprocess/mask_GFS/05584500.nc')
 mask = xr.open_dataset(path_to_your_nc_file)
-box = (mask.coords["lon"][0], mask.coords["lat"][0],mask.coords["lon"][-1], mask.coords["lat"][-1])
-test_data = fetch_latest_data(date_np = "2017-01-01", time_str = "23", bbbox = box, num = 3)
+box = (mask.coords["lon"][0], mask.coords["lat"][0], mask.coords["lon"][-1], mask.coords["lat"][-1])
+test_data = fetch_latest_data(date_np="2017-01-01", time_str="23", bbbox=box, num=3)
 # print(test_data)
 test_data.to_netcdf('test_data.nc')
