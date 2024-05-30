@@ -214,9 +214,6 @@ fabric.properties
 # Editor-based Rest Client
 .idea/httpRequests
 
-# trained models
-models/
-
 *.xlsx
 .vscode
 /test/SCEUA_*.csv
@@ -224,5 +221,5 @@ models/
 /hydromodel/app/*.csv
 /test/test_data_camels_cc.py
 /example/*
-/results/
+/results/*
 /.hydrodataset*/
