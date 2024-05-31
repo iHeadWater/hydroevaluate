@@ -21,7 +21,7 @@ import yaml
 from scipy import signal
 from yaml import Loader, Dumper
 
-from hydroevaluate.modelloader.load_model import run_normal_dl
+from hydroevaluate.modelloader.load_torchmodel import run_normal_dl
 
 work_dir = pl.Path(os.path.abspath(os.curdir)).parent.parent
 with open(os.path.join(work_dir, "test_data/privacy_config.yml"), "r") as fp:

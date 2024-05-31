@@ -1,7 +1,7 @@
 <!--
  * @Author: Wenyu Ouyang
  * @Date: 2024-02-12 09:52:49
- * @LastEditTime: 2024-05-31 10:30:30
+ * @LastEditTime: 2024-05-31 14:14:36
  * @LastEditors: Wenyu Ouyang
  * @Description: 中文版README
  * @FilePath: \hydroevaluate\README_CN.md
@@ -40,3 +40,7 @@ TODO: 待定
 - 预报
 - 评估
 - 输出
+
+## 说明
+
+目前本仓库刚开始开发，侧重于评估和输出模块，其他部分暂时有未开源的脚本代码执行，后续完善后会整合入这个体系。
