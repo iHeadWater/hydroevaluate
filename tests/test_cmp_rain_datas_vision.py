@@ -4,7 +4,6 @@ import pathlib
 import matplotlib.pyplot as plt
 import pandas as pd
 
-import definitions
 
 
 def test_compare_rain_by_pics():

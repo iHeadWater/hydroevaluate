@@ -1,11 +1,15 @@
 #!/usr/bin/env python
-
-"""Tests for `hydroevaluate` package."""
+"""
+Author: Wenyu Ouyang
+Date: 2024-05-31 14:21:54
+LastEditTime: 2024-05-31 15:44:52
+LastEditors: Wenyu Ouyang
+Description: Tests for `hydroevaluate` package.
+FilePath: \hydroevaluate\tests\test_hydroevaluate.py
+Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
+"""
 
 import pytest
-
-
-from hydroevaluate import hydroevaluate
 
 
 @pytest.fixture

@@ -5,7 +5,6 @@ import sqlalchemy as sqa
 from sqlalchemy import MetaData, Table
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-import definitions
 
 
 def test_read_database_json():

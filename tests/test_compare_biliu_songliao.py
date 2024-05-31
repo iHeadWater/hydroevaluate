@@ -2,7 +2,6 @@ import os
 import pandas as pd
 from geopandas import GeoDataFrame
 
-import definitions
 import geopandas as gpd
 from matplotlib import pyplot as plt
 

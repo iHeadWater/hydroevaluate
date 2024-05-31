@@ -1,16 +1,13 @@
 import os
 from datetime import datetime
 
-import cdsapi
 import calendar
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-import definitions
 
-c = cdsapi.Client()  # 创建用户
 
 # 数据信息字典
 dic = {

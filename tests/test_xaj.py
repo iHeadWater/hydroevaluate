@@ -4,15 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import sys
-sys.path.append("HYDRO_MODEL_XAJ")
-import definitions
-
-from hydromodel.calibrate.calibrate_sceua import calibrate_by_sceua
-from hydromodel.calibrate.calibrate_ga import calibrate_by_ga
-from hydromodel.data.data_postprocess import read_save_sceua_calibrated_params
-from hydromodel.utils import hydro_constant, hydro_utils
-from hydromodel.visual.pyspot_plots import show_calibrate_result, show_test_result
-from hydromodel.models.xaj import xaj, uh_gamma, uh_conv
 
 
 @pytest.fixture()
@@ -140,11 +131,13 @@ def test_xaj(p_and_e, params, warmup_length):
         source_book="HF",
         source_type="sources",
     )
-    results = pd.DataFrame({
-                 'discharge': qsim.flatten(),
-                 'ET': e.flatten(),  
-             })
-    
+    results = pd.DataFrame(
+        {
+            "discharge": qsim.flatten(),
+            "ET": e.flatten(),
+        }
+    )
+
     # np.testing.assert_array_equal(qsim.shape[0], p_and_e.shape[0] - warmup_length)
 
 

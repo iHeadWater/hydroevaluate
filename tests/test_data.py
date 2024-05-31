@@ -7,6 +7,7 @@ Description: Test for data preprocess
 FilePath: \hydro-model-xaj\test\test_data.py
 Copyright (c) 2021-2022 Wenyu Ouyang. All rights reserved.
 """
+
 import os
 from collections import OrderedDict
 
@@ -14,8 +15,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import definitions
-from hydromodel.utils import hydro_utils
+import hydroutils
 
 
 @pytest.fixture()
@@ -62,11 +62,11 @@ def test_save_data(txt_file, json_file, npy_file):
     # trans ft3/s to mm/day
     basin_area = 2252.7
     data[variables[-1]] = (
-            data[["streamflow(ft3/s)"]].values
-            * ft3tom3
-            / (basin_area * km2tom2)
-            * mtomm
-            * daytos
+        data[["streamflow(ft3/s)"]].values
+        * ft3tom3
+        / (basin_area * km2tom2)
+        * mtomm
+        * daytos
     )
     df = data[variables]
     hydro_utils.serialize_numpy(np.expand_dims(df.values, axis=1), npy_file)

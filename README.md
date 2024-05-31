@@ -7,7 +7,7 @@
  * @FilePath: \hydroevaluate\README.md
  * Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
 -->
-# HydroForecast
+# hydroevaluate
 
 This project aims to provide a unified evaluation framework for hydrological models, facilitating the evaluation and comparison of different models.
 

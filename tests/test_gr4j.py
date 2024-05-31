@@ -5,10 +5,7 @@ import pandas as pd
 import pytest
 import spotpy
 from matplotlib import pyplot as plt
-import definitions
-from hydromodel.calibrate.calibrate_sceua import calibrate_by_sceua, SpotSetup
 from hydromodel.models.gr4j import gr4j
-from hydromodel.visual.pyspot_plots import show_calibrate_result
 
 
 @pytest.fixture()

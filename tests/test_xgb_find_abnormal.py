@@ -11,7 +11,6 @@ from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 
-import definitions
 
 
 def test_dt_find_abnormal_otq():

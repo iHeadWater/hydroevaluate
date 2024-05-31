@@ -1,0 +1,14 @@
+defaults:
+  - model: simple_model
+  - data: data_loader
+  - evaluate: evaluate
+
+model:
+  path: "models/model.pth"
+  input_size: 10
+
+data:
+  path: "data/data.csv"
+
+evaluate:
+  output_path: "results/predictions.csv"

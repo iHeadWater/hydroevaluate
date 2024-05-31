@@ -8,10 +8,6 @@ from geopandas import GeoDataFrame
 from shapely import Point
 import geopandas as gpd
 
-import definitions
-
-gdf_biliu_shp: GeoDataFrame = gpd.read_file(os.path.join(definitions.ROOT_DIR, 'example/biliuriver_shp'
-                                                                               '/碧流河流域.shp'), engine='pyogrio')
 
 
 # step1: kgo8gd/tnld77/tdi9atr3mir1e3g6
