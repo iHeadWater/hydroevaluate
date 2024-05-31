@@ -1,7 +1,7 @@
 <!--
  * @Author: Wenyu Ouyang
  * @Date: 2024-02-12 09:52:49
- * @LastEditTime: 2024-05-30 09:08:47
+ * @LastEditTime: 2024-05-31 10:30:30
  * @LastEditors: Wenyu Ouyang
  * @Description: 中文版README
  * @FilePath: \hydroevaluate\README_CN.md
@@ -16,3 +16,27 @@
 此外，关于模型评估的研究也很多，后续会不断补充进相关程序以更深入地探讨。
 
 **注：此项目刚刚启动**
+
+## 安装
+
+```bash
+pip install hydroevaluate
+```
+
+## 使用
+
+TODO: 待定
+
+## 设计思路与框架
+
+首先，本仓库定位是在torchhydro和hydromodel训练模型后，在这两个仓库能进行模拟评估的基础上进行真正的预报评估。
+
+主要的流程就是：直接对接的是这两个仓库的率定/训练后的模型，然后接收指定的输入数据，加载模型并进行实际预报（的模拟），然后对得到的结果进行分析评估，并输出保存或者发送到指定的地方。
+
+所以相应的模块主要就包括以下五个环节：
+
+- 模型加载
+- 数据加载
+- 预报
+- 评估
+- 输出

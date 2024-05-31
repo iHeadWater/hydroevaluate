@@ -1,0 +1,20 @@
+name: hydroevaluate
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pytest
+  - black
+  - flake8
+  - pip
+  - pip:
+    - hydromodel
+    - torchhydro
+    - mlflow
+    - hydra-core
+    - setuptools
+    - wheel
+    - twine
+    - bump2version

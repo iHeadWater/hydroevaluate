@@ -1,9 +1,9 @@
-.. hydro-model-xaj documentation master file, created by
-   sphinx-quickstart on Fri Dec 10 08:29:52 2021.
+.. hydroevaluate documentation master file, created by
+   sphinx-quickstart on Fri May 31 08:29:52 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to hydro-model-xaj's documentation!
+Welcome to hydroevaluate's documentation!
 ===========================================
 
 .. toctree::

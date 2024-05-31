@@ -1,7 +1,7 @@
-hydromodel
+hydroevaluate
 ==========
 
 .. toctree::
    :maxdepth: 4
 
-   hydromodel
+   hydroevaluate

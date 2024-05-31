@@ -17,8 +17,8 @@ sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 
-project = "hydro-model-xaj"
-copyright = "2021, Ouyang,Wenyu"
+project = "hydroevaluate"
+copyright = "2024, Ouyang,Wenyu"
 author = "Ouyang,Wenyu"
 
 # The full version, including alpha/beta/rc tags
