@@ -1,0 +1,13 @@
+data_cfgs:
+  basin_attr_file: "/aiff_config"
+  time_range: ["2001-01-01", "2001-12-31"]
+model_cfgs:
+  model_name: "xaj"
+  weight_dir: "test_data/models/best_model.pth"
+  model_hyperparam:
+    warmup_length: 168
+    forecast_history: 24
+    forecast_length: 24
+    n_output: 1
+evaluation_cfgs:
+  metrics: ['NSE', 'KGE', 'Bias', 'RMSE']

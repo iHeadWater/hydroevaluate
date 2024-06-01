@@ -1,28 +1,21 @@
-#!/usr/bin/env python
 """
 Author: Wenyu Ouyang
-Date: 2024-05-31 14:21:54
-LastEditTime: 2024-05-31 15:44:52
+Date: 2024-05-30 09:11:04
+LastEditTime: 2024-06-01 11:24:25
 LastEditors: Wenyu Ouyang
-Description: Tests for `hydroevaluate` package.
+Description: Test cases for EvalDeepHydro
 FilePath: \hydroevaluate\tests\test_hydroevaluate.py
 Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
 """
 
-import pytest
+import omegaconf
+from hydroevaluate.hydroevaluate import EvalDeepHydro
 
 
-@pytest.fixture
-def response():
-    """Sample pytest fixture.
-
-    See more at: http://doc.pytest.org/en/latest/fixture.html
-    """
-    # import requests
-    # return requests.get('https://github.com/audreyr/cookiecutter-pypackage')
-
-
-def test_content(response):
-    """Sample pytest test function with the pytest fixture as an argument."""
-    # from bs4 import BeautifulSoup
-    # assert 'GitHub' in BeautifulSoup(response.content).title.string
+def test_load_config():
+    config_path = "conf"
+    config_name = "default_config.yml"
+    eval_deep_hydro = EvalDeepHydro(config_path, config_name)
+    assert isinstance(eval_deep_hydro.cfg, omegaconf.dictconfig.DictConfig)
+    assert "data_cfgs" in eval_deep_hydro.cfg
+    assert "model_cfgs" in eval_deep_hydro.cfg

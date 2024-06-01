@@ -1,7 +1,7 @@
 """
 Author: Wenyu Ouyang
 Date: 2024-05-30 09:11:04
-LastEditTime: 2024-05-31 15:56:10
+LastEditTime: 2024-05-31 16:20:09
 LastEditors: Wenyu Ouyang
 Description: Load hydromodel
 FilePath: \hydroevaluate\hydroevaluate\modelloader\load_hydromodel.py
@@ -29,8 +29,6 @@ def load_hydromodel(
 
     Parameters
     ----------
-    model_info : _type_
-        _description_
     p_and_e : _type_
         _description_
     area:
@@ -39,7 +37,8 @@ def load_hydromodel(
         calibrated norm parameters file
     param_range_file : _type_
         _description_
-
+    model_info_file : _type_
+        _description_
     Returns
     -------
     _type_
@@ -65,9 +64,6 @@ def load_hydromodel(
     )
     ureg = pint.UnitRegistry()
     ureg.force_ndarray_like = True
-    q_sim_with_unit = qsim * ureg.mm / ureg.h / 3
+    q_sim_with_unit = qsim * ureg.mm / ureg.h / model_info["time_interval_hours"]
     area_np_with_unit = area * ureg.km**2
-    streamflow = streamflow_unit_conv(
-        q_sim_with_unit, area_np_with_unit, target_unit, True
-    )
-    return streamflow
+    return streamflow_unit_conv(q_sim_with_unit, area_np_with_unit, target_unit, True)

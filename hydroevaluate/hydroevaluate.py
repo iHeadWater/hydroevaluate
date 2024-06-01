@@ -1,7 +1,7 @@
 """
 Author: Wenyu Ouyang
 Date: 2024-05-30 09:11:04
-LastEditTime: 2024-05-31 13:45:31
+LastEditTime: 2024-06-01 11:12:47
 LastEditors: Wenyu Ouyang
 Description: main function for hydroevaluate
 FilePath: \hydroevaluate\hydroevaluate\hydroevaluate.py
@@ -10,33 +10,68 @@ Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
 
 # pytest model_stream.py::test_auto_stream
 import os.path
-import pathlib as pl
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 import numpy as np
-import s3fs
 import yaml
 from scipy import signal
 from yaml import Loader, Dumper
 
-from hydroevaluate.modelloader.load_torchmodel import run_normal_dl
 
-work_dir = pl.Path(os.path.abspath(os.curdir)).parent.parent
-with open(os.path.join(work_dir, "test_data/privacy_config.yml"), "r") as fp:
-    private_str = fp.read()
-private_yml = yaml.load(private_str, Loader)
-storage_option = {
-    "key": private_yml["minio"]["access_key"],
-    "secret": private_yml["minio"]["secret"],
-    "client_kwargs": {"endpoint_url": private_yml["minio"]["client_endpoint"]},
-}
-mc_fs = s3fs.S3FileSystem(
-    endpoint_url=storage_option["client_kwargs"]["endpoint_url"],
-    key=storage_option["key"],
-    secret=storage_option["secret"],
-)
+import os
+import hydra
+
+
+class EvalDeepHydro:
+    def __init__(self, config_path, config_name):
+        self.cfg = self.load_config(config_path, config_name)
+
+    @staticmethod
+    def load_config(config_path, config_name):
+        with hydra.initialize(config_path=config_path):
+            cfg = hydra.compose(config_name=config_name)
+        return cfg
+
+    def model_evaluate(self):
+        # Assume load_model and evaluate are methods defined in this class
+        self.load_model(self.pth_path)
+        eval_log, preds_xr, obss_xr = self.evaluate()
+        return eval_log, preds_xr, obss_xr
+
+    # ... rest of your methods ...
+
+
+def read_history_model(user_model_type="wasted", version="1"):
+    history_dict_path = os.path.join(work_dir, "test_data/history_dict.npy")
+    # 姑且假设所有模型都被放在test_data/models文件夹下
+    if not os.path.exists(history_dict_path):
+        history_dict = _read_history_model(user_model_type, version, history_dict_path)
+    else:
+        history_dict = np.load(history_dict_path, allow_pickle=True).flatten()[0]
+        model_file_name = f"{user_model_type}_v{str(version)}.pth"
+        if model_file_name not in history_dict.keys():
+            history_dict[user_model_type] = version
+
+    return history_dict
+
+
+def _read_history_model(user_model_type, version, history_dict_path):
+    result = {}
+    models = os.listdir(os.path.join(work_dir, "test_data/models"))
+    # 姑且假设model的名字为wasted_v1.pth，即用途_版本.pth
+    current_max = 0
+    for model_name in models:
+        if user_model_type in model_name:
+            model_ver = int(model_name.split(".")[0].split("v")[1])
+            if model_ver > current_max:
+                current_max = model_ver
+    model_file_name = f"{user_model_type}_v{str(version)}.pth"
+    if model_file_name in models:
+        result[user_model_type] = current_max
+        np.save(history_dict_path, result, allow_pickle=True)
+    return result
 
 
 def auto_stream():
@@ -45,7 +80,7 @@ def auto_stream():
         test_conf_yml = yaml.load(fp, Loader)
     # 配置文件中的weight_dir应与模型保存位置相对应，目前模型路径是直接指定，而非选择最新
     # test_model_name = test_read_history(user_model_type='model', version='300')
-    eval_log, preds_xr, obss_xr = run_normal_dl(test_config_path)
+    eval_log, preds_xr, obss_xr = load_torchmodel(test_config_path)
     preds_xr_sf_np = preds_xr["streamflow"].to_numpy().T
     obss_xr_sf_np = obss_xr["streamflow"].to_numpy().T
     eval_log["Metrics"] = {}
@@ -61,12 +96,13 @@ def auto_stream():
     eval_log.pop("RMSE of streamflow")
     eval_log["Metrics"]["Bias of peak height(mm/h)"] = {}
     eval_log["Metrics"]["Bias of peak appearance(h)"] = {}
-    eval_log["Reports"] = {}
-    eval_log["Reports"]["Total streamflow(mm/h)"] = {}
-    eval_log["Reports"]["Peak rainfall(mm)"] = {}
-    eval_log["Reports"]["Peak streamflow(mm/h)"] = {}
-    eval_log["Reports"]["Streamflow peak appearance"] = {}
-    for i in range(0, preds_xr_sf_np.shape[0]):
+    eval_log["Reports"] = {
+        "Total streamflow(mm/h)": {},
+        "Peak rainfall(mm)": {},
+        "Peak streamflow(mm/h)": {},
+        "Streamflow peak appearance": {},
+    }
+    for i in range(preds_xr_sf_np.shape[0]):
         basin = obss_xr["basin"].to_numpy()[i]
         pred_peaks_index = signal.argrelmax(preds_xr_sf_np[i])
         pred_peaks_time = (preds_xr["time_now"].to_numpy())[pred_peaks_index]
@@ -75,7 +111,7 @@ def auto_stream():
         eval_log["Metrics"]["Bias of peak height(mm/h)"][basin] = np.mean(
             [
                 abs(obss_xr_sf_np[i] - preds_xr_sf_np[i])
-                for i in range(0, len(obs_peaks_index))
+                for i in range(len(obs_peaks_index))
             ]
         ).tolist()
 
@@ -83,7 +119,7 @@ def auto_stream():
             np.mean(
                 [
                     abs(obss_peaks_time[i] - pred_peaks_time[i])
-                    for i in range(0, len(obss_peaks_time))
+                    for i in range(len(obss_peaks_time))
                 ]
             ).tolist()
             / 3.6e12

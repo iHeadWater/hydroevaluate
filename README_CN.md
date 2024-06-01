@@ -1,7 +1,7 @@
 <!--
  * @Author: Wenyu Ouyang
  * @Date: 2024-02-12 09:52:49
- * @LastEditTime: 2024-05-31 14:40:57
+ * @LastEditTime: 2024-06-01 09:48:11
  * @LastEditors: Wenyu Ouyang
  * @Description: 中文版README
  * @FilePath: \hydroevaluate\README_CN.md
@@ -28,8 +28,6 @@ pip install hydroevaluate
 整体代码是从config开始，首先进行配置，配置是用户指定的输入，hydroevaluate根据配置来执行相应的操作。
 
 示例配置文件在 `hydroevaluate/conf` 目录下，可以参考这些配置文件来编写自己的配置文件。
-
-
 
 ## 设计思路与框架
 
