@@ -12,7 +12,7 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
-from hydroevaluate.modelloader.load_hydromodel import load_hydromodel
+from modelloader.model import load_hydromodel
 
 
 def test_load_hydromodel():

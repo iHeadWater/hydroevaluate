@@ -1,7 +1,7 @@
 """
 Author: Wenyu Ouyang
 Date: 2024-05-30 09:11:04
-LastEditTime: 2024-06-01 11:12:47
+LastEditTime: 2024-06-02 10:39:09
 LastEditors: Wenyu Ouyang
 Description: main function for hydroevaluate
 FilePath: \hydroevaluate\hydroevaluate\hydroevaluate.py
@@ -21,17 +21,23 @@ from yaml import Loader, Dumper
 
 
 import os
-import hydra
+
+from hydroevaluate import SETTING
 
 
 class EvalDeepHydro:
-    def __init__(self, config_path, config_name):
-        self.cfg = self.load_config(config_path, config_name)
+    def __init__(self, conf_file=None):
+        self.conf_dir = SETTING["conf_dir"]
+        self.conf_name = conf_file
+        self.cfg = self._load_config()
 
-    @staticmethod
-    def load_config(config_path, config_name):
-        with hydra.initialize(config_path=config_path):
-            cfg = hydra.compose(config_name=config_name)
+    def _load_config(self):
+        config_name = self.conf_name
+        if config_name is None:
+            # TODO: we chose the first as the default, later we will handle with multiple config files
+            config_name = os.listdir(self.conf_dir)[0]
+        with open(os.path.join(self.conf_dir, config_name), "r") as fp:
+            cfg = yaml.load(fp, Loader)
         return cfg
 
     def model_evaluate(self):

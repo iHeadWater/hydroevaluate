@@ -13,7 +13,6 @@ dependencies:
     - hydromodel
     - torchhydro
     - mlflow
-    - hydra-core
     - setuptools
     - wheel
     - twine

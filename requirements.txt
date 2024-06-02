@@ -1,4 +1,3 @@
 mlflow
-hydra-core
 hydromodel
 torchhydro

@@ -216,7 +216,7 @@ fabric.properties
 
 *.xlsx
 .vscode
-/test/SCEUA_*.csv
+/conf_test/*
 /test/SCEUA_*
 /hydromodel/app/*.csv
 /test/test_data_camels_cc.py
