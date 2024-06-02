@@ -14,7 +14,7 @@ class EvalDataset:
         norm_x, norm_c = self._normalize()
         self.x, self.c = self._kill_nan(norm_x, norm_c)
 
-    def _read_xc():
+    def _read_xc(self):
         pass
 
     def _kill_nan():

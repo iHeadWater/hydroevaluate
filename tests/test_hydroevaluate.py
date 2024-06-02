@@ -18,6 +18,6 @@ def test_load_config():
     assert "evaluation_cfgs" in eval_deep_hydro.cfg
 
 
-def test_model_load():
+def test_load_data():
     eval_deep_hydro = EvalDeepHydro()
-    eval_deep_hydro.load_model()
+    eval_deep_hydro.load_data()
