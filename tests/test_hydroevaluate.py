@@ -1,7 +1,7 @@
 """
 Author: Wenyu Ouyang
 Date: 2024-05-30 09:11:04
-LastEditTime: 2024-06-02 10:35:52
+LastEditTime: 2024-06-02 11:47:39
 LastEditors: Wenyu Ouyang
 Description: Test cases for EvalDeepHydro
 FilePath: \hydroevaluate\tests\test_hydroevaluate.py
@@ -16,3 +16,8 @@ def test_load_config():
     assert "data_cfgs" in eval_deep_hydro.cfg
     assert "model_cfgs" in eval_deep_hydro.cfg
     assert "evaluation_cfgs" in eval_deep_hydro.cfg
+
+
+def test_model_load():
+    eval_deep_hydro = EvalDeepHydro()
+    eval_deep_hydro.load_model()

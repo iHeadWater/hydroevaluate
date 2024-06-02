@@ -1,18 +1,20 @@
 """
 Author: Wenyu Ouyang
 Date: 2024-05-30 09:11:04
-LastEditTime: 2024-05-31 15:48:11
+LastEditTime: 2024-06-02 13:42:58
 LastEditors: Wenyu Ouyang
 Description: 
-FilePath: \hydroevaluate\tests\test_load_hydromodel.py
+FilePath: \hydroevaluate\tests\test_model.py
 Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
 """
 
 import os
+import pytest
 import numpy as np
 import pandas as pd
-import pytest
-from modelloader.model import load_hydromodel
+import torch
+from torchhydro.models.cudnnlstm import CpuLstmModel
+from modelloader.model import load_hydromodel, load_torchmodel
 
 
 def test_load_hydromodel():
@@ -43,5 +45,25 @@ def test_load_hydromodel():
     # Add more assertions as needed to validate the result
 
 
-# Run the tests
-pytest.main([__file__])
+def test_load_torchmodel(tmp_path):
+    model_name = "CpuLSTM"
+    model_hyperparam = {
+        "n_input_features": 10,
+        "n_output_features": 2,
+        "n_hidden_states": 5,
+    }
+    pth_path = os.path.join(tmp_path, "model_tmp.pth")
+    model_ = CpuLstmModel(**model_hyperparam)
+    # Save the model state_dict instead of using a non-existent save method
+    torch.save(model_.state_dict(), pth_path)
+    # Call the load_torchmodel function
+    model = load_torchmodel(model_name, model_hyperparam, pth_path)
+
+    # Perform assertions to validate the result
+    assert isinstance(model, torch.nn.Module)
+    # Add more assertions as needed to validate the result
+    # sourcery skip: no-loop-in-tests
+    for param_tensor in model_.state_dict():
+        assert torch.equal(
+            model_.state_dict()[param_tensor], model.state_dict()[param_tensor]
+        )
