@@ -1,7 +1,8 @@
 import pandas as pd
+from hydrodatasource.reader.postgres import read_forcing_dataframe
 
 
-def process_smapData_wrong(data, stcd, tolerance=0.05):
+def process_smap_sm_surface_like_gpm(data, stcd, tolerance=0.05):
     # 处理 smapData
     smap_df = read_forcing_dataframe("smap", stcd, data)
 
@@ -61,7 +62,7 @@ def process_smapData_wrong(data, stcd, tolerance=0.05):
     return result_dataarray
 
 
-def process_smapData(data, stcd):
+def process_smap_sm_surface(data, stcd):
     # 处理 smapData
     smap_df = read_forcing_dataframe("smap", stcd, data)
 

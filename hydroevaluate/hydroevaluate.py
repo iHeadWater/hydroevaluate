@@ -1,7 +1,7 @@
 """
 Author: Wenyu Ouyang
 Date: 2024-05-30 09:11:04
-LastEditTime: 2024-06-02 16:24:18
+LastEditTime: 2024-06-03 15:20:23
 LastEditors: Wenyu Ouyang
 Description: main function for hydroevaluate
 FilePath: \hydroevaluate\hydroevaluate\hydroevaluate.py
@@ -61,7 +61,7 @@ class EvalDeepHydro:
         return load_torchmodel(model_type, model_hyperparam, trained_param_dir)
 
     def load_data(self):
-        data_cfgs = self.cfgs["data_cfgs"]
+        data_cfgs = self.cfg["data_cfgs"]
         return load_dataset(data_cfgs)
 
     def run_model(self):

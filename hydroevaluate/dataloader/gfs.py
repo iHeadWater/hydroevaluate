@@ -1,9 +1,9 @@
 import pandas as pd
-
+from hydrodatasource.reader.postgres import read_forcing_dataframe
 from hydroevaluate.utils.heutils import convert_baseDatetime_iso
 
 
-def process_gfsTp(time, stcd, tolerance=0.05):
+def process_gfs_tp(time, stcd, tolerance=0.05):
     # 处理 gfsTp
     gfstp_df = read_forcing_dataframe("gfs_tp", stcd, time)
 
@@ -64,8 +64,7 @@ def process_gfsTp(time, stcd, tolerance=0.05):
     return result_dataarray
 
 
-# TODO: 暂时用不到，就不改了
-def process_gfsData(data, stcd):
+def process_gfs_other_forcing(data, stcd):
     # 处理 gfsData
     for record in data.get("gfsData", []):
         record["baseDatetime"] = convert_baseDatetime_iso(record, "baseDatetime")
@@ -184,7 +183,7 @@ def process_gfsData(data, stcd):
     return d2m_dataarray, t2m_dataarray, dswrf_dataarray
 
 
-def process_gfsSoilData(time, stcd):
+def process_gfs_soil(time, stcd):
     # 处理 gfsSoilData
     gfsSoil_df = read_forcing_dataframe("gfs_soil", stcd, time)
 

@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+Author: Wenyu Ouyang
+Date: 2023-10-29 17:35:04
+LastEditTime: 2024-06-03 15:21:41
+LastEditors: Wenyu Ouyang
+Description: Load data for evaluation
+FilePath: \hydroevaluate\hydroevaluate\dataloader\data.py
+Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
+"""
 
 
 class EvalDataset:
@@ -42,4 +51,4 @@ def load_dataset(data_cfgs):
     _type_
         _description_
     """
-    return EvalDataset(**data_cfgs)
+    return EvalDataset(data_cfgs)

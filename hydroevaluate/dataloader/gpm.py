@@ -1,7 +1,18 @@
+"""
+Author: Shuolong Xu
+Date: 2023-10-29 17:35:04
+LastEditTime: 2024-06-03 15:53:54
+LastEditors: Wenyu Ouyang
+Description: 
+FilePath: \hydroevaluate\hydroevaluate\dataloader\gpm.py
+Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
+"""
+
 import pandas as pd
+from hydrodatasource.reader.postgres import read_forcing_dataframe
 
 
-def process_gpmData(time, stcd, tolerance=0.05):
+def process_gpm_data(time, stcd, tolerance=0.05):
     # 处理 gpmData
     gpm_df = read_forcing_dataframe("gpm_tp", stcd, time)
 
@@ -66,5 +77,3 @@ def process_gpmData(time, stcd, tolerance=0.05):
     result_dataarray = result_dataarray.expand_dims("basin").assign_coords(basin=[stcd])
 
     return result_dataarray
-
-
