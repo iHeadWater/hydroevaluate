@@ -83,10 +83,10 @@ class GFS(EvalDataSource):
         super().__init__("GFS", var_lst)
 
     def basin_mean_process(self, basin_id, time_range, var, tolerance=0.005):
-        if var == "tp":
-            return process_gfs_tp(time_range[0], basin_id, tolerance)
-        elif var == "soilw":
-            return process_gfs_soil(time_range[0], basin_id, tolerance)
+        if var == "gfs_tp":
+            return process_gfs_tp(time_range, basin_id, tolerance)
+        elif var == "gfs_soilw":
+            return process_gfs_soil(time_range, basin_id)
         elif var in ["d2m", "t2m", "dswrf"]:
             # TODO: this should be more efficient
             data_ = process_gfs_other_forcing(time_range[0], basin_id, tolerance)
@@ -97,11 +97,11 @@ class GFS(EvalDataSource):
 
 class SMAP(EvalDataSource):
     def __init__(self, var_lst):
-        super().__init__("SMAP", var_lst)
+        super().__init__("smap_sm_surface", var_lst)
 
     def basin_mean_process(self, basin_id, time_range, var, tolerance=0.005):
-        if var == "sm_surface":
-            return process_smap_sm_surface(time_range[0], basin_id, tolerance)
+        if var == "smap_sm_surface":
+            return process_smap_sm_surface(time_range, basin_id)
         else:
             raise ValueError("Variable not supported")
 

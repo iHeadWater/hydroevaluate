@@ -1,6 +1,6 @@
 import pandas as pd
 from hydrodatasource.reader.postgres import read_forcing_dataframe
-from hydroevaluate.utils.heutils import convert_baseDatetime_iso
+from hydroevaluate.utils.heutils import convert_baseDatetime_iso, to_dataarray
 
 
 def process_gfs_tp(time, stcd, tolerance=0.05):
@@ -185,13 +185,13 @@ def process_gfs_other_forcing(data, stcd):
 
 def process_gfs_soil(time, stcd):
     # 处理 gfsSoilData
-    gfsSoil_df = read_forcing_dataframe("gfs_soil", stcd, time)
+    gfsSoil_df = read_forcing_dataframe("gfs_soilw", stcd, time)
 
     gfsSoil_df["forecastdatetime"] = pd.to_datetime(gfsSoil_df["forecastdatetime"])
 
     # 计算 intersection_area 和 soilw 的乘积
     gfsSoil_df["intersection_area_soilw"] = (
-        gfsSoil_df["intersection_area"] * gfsSoil_df["soilw"]
+        gfsSoil_df["intersection_area"] * gfsSoil_df["sm_surface"]
     )
 
     # 计算每个 forecastdatetime 下的 intersection_area 和 intersection_area_soilw 的和
@@ -202,7 +202,7 @@ def process_gfs_soil(time, stcd):
     )
 
     # 计算新的 soilw_cal_from_origin 列
-    grouped["gfs_soil"] = (
+    grouped["gfs_soilw"] = (
         grouped["intersection_area_soilw"] / grouped["intersection_area"]
     )
 
@@ -232,7 +232,7 @@ def process_gfs_soil(time, stcd):
 
     # 转换为 DataArray
     result_dataarray = to_dataarray(
-        grouped, dims=["time"], coords={"time": grouped["time"]}, name="gfs_soil"
+        grouped, dims=["time"], coords={"time": grouped["time"]}, name="gfs_soilw"
     )
     result_dataarray = result_dataarray.rename("sm_surface")
     result_dataarray = result_dataarray.expand_dims("basin").assign_coords(basin=[stcd])

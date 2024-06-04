@@ -1,10 +1,11 @@
 import pandas as pd
 from hydrodatasource.reader.postgres import read_forcing_dataframe
+from hydroevaluate.utils.heutils import to_dataarray
 
 
 def process_smap_sm_surface_like_gpm(data, stcd, tolerance=0.05):
     # 处理 smapData
-    smap_df = read_forcing_dataframe("smap", stcd, data)
+    smap_df = read_forcing_dataframe("smap_sm_surface", stcd, data)
 
     smap_df["predictdate"] = pd.to_datetime(smap_df["predictdate"])
 
@@ -64,7 +65,7 @@ def process_smap_sm_surface_like_gpm(data, stcd, tolerance=0.05):
 
 def process_smap_sm_surface(data, stcd):
     # 处理 smapData
-    smap_df = read_forcing_dataframe("smap", stcd, data)
+    smap_df = read_forcing_dataframe("smap_sm_surface", stcd, data)
 
     smap_df["predictdate"] = pd.to_datetime(smap_df["predictdate"])
 
