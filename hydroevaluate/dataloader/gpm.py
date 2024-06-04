@@ -10,11 +10,12 @@ Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
 
 import pandas as pd
 from hydrodatasource.reader.postgres import read_forcing_dataframe
+from hydroevaluate.utils.heutils import to_dataarray
 
 
-def process_gpm_data(time, stcd, tolerance=0.05):
+def process_gpm_data(time_period, stcd, tolerance=0.05):
     # 处理 gpmData
-    gpm_df = read_forcing_dataframe("gpm_tp", stcd, time)
+    gpm_df = read_forcing_dataframe("gpm_tp", stcd, time_period)
 
     gpm_df["predictdate"] = pd.to_datetime(gpm_df["predictdate"])
 

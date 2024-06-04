@@ -72,10 +72,8 @@ class GPM(EvalDataSource):
         super().__init__("GPM", var_lst)
 
     def basin_mean_process(self, basin_id, time_range, var, tolerance=0.005):
-        if var == "tp":
-            # TODO: actually, sometimes we may simulate historical case and treat it as a real forecast
-            # in this case, only a start time is not enough
-            return process_gpm_data(time_range[0], basin_id, tolerance)
+        if var == "gpm_tp":
+            return process_gpm_data(time_range, basin_id, tolerance)
         else:
             raise ValueError("Variable not supported")
 
@@ -109,7 +107,7 @@ class SMAP(EvalDataSource):
 
 
 class MultiSource:
-    def __init__(self, var_lst, merge_type="impute"):
+    def __init__(self, var_lst, impute_setting):
         """_summary_
 
         Parameters
@@ -120,6 +118,11 @@ class MultiSource:
             _description_
         """
         self._check_source(var_lst)
+        # TODO:
+        self._obs_read(var_lst, basin_id_lst, time_range)
+        self._pred_read(var_lst, basin_id_lst, time_range)
+        self._merge()
+        self._aggregate()
 
     def _check_source(self, var_lst):
         for var in var_lst:

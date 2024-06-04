@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torchhydro.models.cudnnlstm import CpuLstmModel
-from modelloader.model import load_hydromodel, load_torchmodel
+from hydroevaluate.modelloader.model import load_hydromodel, load_torchmodel
 
 
 def test_load_hydromodel():

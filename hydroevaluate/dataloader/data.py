@@ -8,6 +8,7 @@ Description: Load data for evaluation
 FilePath: \hydroevaluate\hydroevaluate\dataloader\data.py
 Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
 """
+from hydroevaluate.dataloader.common import MultiSource
 
 
 class EvalDataset:
@@ -24,9 +25,12 @@ class EvalDataset:
         self.x, self.c = self._kill_nan(norm_x, norm_c)
 
     def _read_xc(self):
+        multi_soucre = MultiSource(self.data_cfgs)
+        # Scaler to norm the data, copy the function from torchhydro if needed
         pass
 
     def _kill_nan():
+        # call from torchhydro
         pass
 
     def _normalize():
