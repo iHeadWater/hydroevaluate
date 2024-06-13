@@ -16,6 +16,8 @@ import xarray as xr
 
 import os.path
 
+import pandas as pd
+
 
 # def read_yaml(version):
 #     config_path = os.path.join(
@@ -44,3 +46,41 @@ def convert_baseDatetime_iso(record, key):
 def to_dataarray(df, dims, coords, name):
     # 将数据转换为 xarray.DataArray
     return xr.DataArray(df[name].values, dims=dims, coords=coords, name=name)
+
+def gee_gpm_to_1h_data(csv_path):
+    """
+    Args:
+        csv_path (_type_): gee_gpm_csv, do not generate the shape column in the csv
+
+    Returns:
+        final_data : gpm 1h mean data, csv type
+    """
+    # Load the CSV file, ensuring BASIN_ID is read as a string
+    data = pd.read_csv(csv_path, dtype={'BASIN_ID': str})
+    
+    # Convert 'time_start' to datetime
+    data['time_start'] = pd.to_datetime(data['time_start'])
+    
+    # Set 'time_start' as index for resampling
+    data.set_index('time_start', inplace=True)
+    
+    # Extract the 'BASIN_ID' for the first row of each hour
+    basin_id = data['BASIN_ID'].resample('H').first()
+    
+    # Select only the numeric columns for resampling
+    numeric_data = data[['precipitationCal']]
+    
+    # Resample to hourly frequency, taking the mean for 'precipitationCal'
+    resampled_data = numeric_data.resample('H').mean()
+    
+    # Combine the resampled data with the corresponding 'BASIN_ID'
+    resampled_data['BASIN_ID'] = basin_id.values
+    
+    # Reset index to move 'time_start' back to a column
+    resampled_data.reset_index(inplace=True)
+    
+    # Select and rename columns as required
+    final_data = resampled_data[['BASIN_ID', 'precipitationCal', 'time_start']]
+    final_data.columns = ['basin', 'precipitationCal', 'time']
+    
+    return final_data
