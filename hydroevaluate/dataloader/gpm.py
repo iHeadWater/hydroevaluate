@@ -11,6 +11,8 @@ Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
 import pandas as pd
 from hydrodatasource.reader.postgres import read_forcing_dataframe
 from hydroevaluate.utils.heutils import to_dataarray
+import logging
+logging.getLogger().setLevel(logging.WARNING)
 
 
 def process_gpm_data(time_period, stcd, tolerance=0.05):

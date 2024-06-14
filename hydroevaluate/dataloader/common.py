@@ -17,7 +17,8 @@ from hydroevaluate.dataloader.gfs import (
 )
 from hydroevaluate.dataloader.gpm import process_gpm_data
 from hydroevaluate.dataloader.smap import process_smap_sm_surface
-
+import logging
+logging.getLogger().setLevel(logging.INFO)
 
 class EvalDataSource(ABC):
     def __init__(self, name, var_lst):

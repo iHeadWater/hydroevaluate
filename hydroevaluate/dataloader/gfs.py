@@ -58,7 +58,7 @@ def process_gfs_tp(time, stcd, tolerance=0.05):
         coords={"time": result_df["time"]},
         name="gfs_tp",
     )
-    result_dataarray = result_dataarray.rename("gpm_tp")
+    result_dataarray = result_dataarray.rename("gfs_tp")
     result_dataarray = result_dataarray.expand_dims("basin").assign_coords(basin=[stcd])
 
     return result_dataarray
